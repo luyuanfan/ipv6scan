@@ -1,1 +1,6 @@
 notebook
+ipaddress
+matplotlib
+pandas
+numpy
+scipy
