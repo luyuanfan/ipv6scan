@@ -70,7 +70,6 @@ def process_file(filepath, fout, host_counter):
             total += 1
 
             if is_slaac(addr):
-                print(addr)
                 slaac_count += 1
             else:
                 fout.write(line + "\n")
@@ -102,6 +101,21 @@ def main():
             grand_slaac_total += slaac_count
 
     dup_count = write_duplicates(host_counter)
+
+    dup_hosts = sum(1 for c in host_counter.values() if c > 1)
+    most_common = host_counter.most_common(20)
+
+    print(f"  SUMMARY")
+    print(f"  Total SrcIPs across all files:   {grand_total}")
+    print(f"  SLAAC (filtered out):            {grand_slaac}")
+    print(f"  Duplicated host bits:            {dup_hosts}")
+
+    print(f"  Top 20 most common host bits:")
+    print(f"  {'Count':>8}  {'Host bits (last 64)':>35}")
+    print(f"  {'-'*8}  {'-'*35}")
+    for host, count in most_common:
+        formatted = f"{host[0:4]}:{host[4:8]}:{host[8:12]}:{host[12:16]}"
+        print(f"  {count:>8}  {formatted:>35}")
 
 if __name__ == "__main__":
     main()
