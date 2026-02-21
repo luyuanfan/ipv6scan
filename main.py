@@ -5,17 +5,48 @@ import ipaddress
 from collections import Counter
 
 FOUT = "non_slaac.csv"
+FDUP = "duplicates.csv"
 
+# check if hex 23th-27th is fffe
 def is_slaac(addr):
     full = addr.exploded.replace(":", "")
     return full[22:26].lower() == "fffe"
 
-def process_file(filepath, fout): 
+# get host bits of addr
+def get_host(addr):
+    full = addr.exploded.replace(":", "")
+    return full[16:]
+
+# write all duplicates to file
+def write_duplicates(host_counter):
+    with open(FOUT, "r") as fin, open(FDUP, "w") as fdup:
+        for line in fin:
+            line = line.strip()
+            if not line:
+                continue
+        
+            columns = line.split(",")
+            if len(columns) < 3:
+                continue
+
+            # get SrcIP in column 3
+            src_ip_str = columns[2].strip()
+
+            try:
+                addr = ipaddress.IPv6Address(src_ip_str)
+            except (ipaddress.AddressValueError, ValueError):
+                continue
+            
+            host_bits = get_host(addr)
+            if host_counter[host_bits] > 1:
+                fdup.write(line + "\n")
+                dup_count += 1
+
+    return dup_count
+
+def process_file(filepath, fout, host_counter): 
     total = 0
     slaac_count = 0
-
-    if not filepath.endswith(".csv.bz2"):
-        return 
 
     with bz2.open(filepath, "rt") as f:
         for line in f:
@@ -43,10 +74,11 @@ def process_file(filepath, fout):
                 slaac_count += 1
             else:
                 fout.write(line + "\n")
+                host_counter[get_host(addr)] += 1
                 # non_slaac.append(addr)
                 # non_slaac.append(line)
 
-    return total, non_slaac_count
+    return total, slaac_count
 
 def main():
 
@@ -55,7 +87,8 @@ def main():
         sys.exit(1)
 
     grand_total = 0
-    grand_non_slaac = 0
+    grand_slaac_total = 0
+    host_counter = Counter()
 
     with open(FOUT, "w") as fout:
         for filepath in sys.argv[1:]:
@@ -64,9 +97,11 @@ def main():
                 continue
             
             print(f"Processing {filepath}...")
-            total, non_slaac_count = process_file(filepath, fout)
+            total, slaac_count = process_file(filepath, fout, host_counter)
             grand_total += total
-            grand_non_slaac += non_slaac_count
+            grand_slaac_total += slaac_count
+
+    dup_count = write_duplicates(host_counter)
 
 if __name__ == "__main__":
     main()
