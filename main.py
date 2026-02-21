@@ -3,9 +3,11 @@ import os
 import bz2
 import ipaddress
 from collections import Counter
+import datetime
 
-FOUT = "non_slaac.csv"
-FDUP = "duplicates.csv"
+now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+FOUT = now + "_non_slaac.csv"
+FDUP = now + "_duplicates.csv"
 
 # check if hex 23th-27th is fffe
 def is_slaac(addr):
