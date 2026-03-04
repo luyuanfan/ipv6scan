@@ -6,6 +6,7 @@ from datetime import datetime
 import logging as log 
 import multiprocessing as mp
 from tqdm import tqdm
+from collections import defaultdict, Counter
 
 NPROC = 30
 CHUCK_SIZE = 50000
@@ -34,28 +35,35 @@ def write_non_slaac(chunk):
     loc_total = 0
     loc_slaac_total = 0
     loc_host_dict = defaultdict(list)
-    loc_nslaac_lst = []
+    loc_host_counter = Counter()
+    loc_nslaac_lines = []
 
     for line in chunk:
-        tokens = line.split(",")
-        if not len(tokens) == 7:
+        parts = line.split(",")
+        if not len(parts) == 7:
             log.warning("Malformed input data line, skipping")
             continue
         # expand address
-        src_ip_str = tokens[2].strip()
-        src_ip_obj = ipaddress.IPv6Address(src_ip_str)
+        src_ip_str = parts[2].strip()
+        # TODO: what do we do if the responding router has a v4 address?
+        try:
+            src_ip_obj = ipaddress.IPv6Address(src_ip_str)
+        except:
+            log.warning(f"Responding router {src_ip_str} has a v4 address")
+            continue
         full_addr = src_ip_obj.exploded.replace(":", "")
         # filter out slaac addresses
         if is_slaac(full_addr):
             loc_slaac_total += 1
         else:
-            loc_nslaac_lst.append(line)
+            loc_nslaac_lines.append(line)
             network_id, host_id = split_ip(full_addr)
             loc_host_dict[host_id].append(network_id)
+            loc_host_counter[host_id] += 1
         loc_total += 1
 
     loc_nslaac_total = loc_total - loc_slaac_total
-    return loc_nslaac_lst, loc_nslaac_total, loc_host_dict
+    return loc_nslaac_lines, loc_total, loc_slaac_total, loc_host_dict, loc_host_counter
 
 '''
 process all data
@@ -72,21 +80,27 @@ def main():
             log.error(f"{filepath} not found, please double check")
             sys.exit(1)
 
-    grand_total = 0                    # total number of addr
-    grand_slaac_total = 0              # total number of slaac addr
-
-    pool = mp.Pool(NPROC)              # create workers
-    host_dict = mp.Manager().dict()    # create shared dictionary
-    outfile = open(outfile_name, "w")  # create shared output file
+    grand_total = 0                      # total number of addr
+    grand_slaac_total = 0                # total number of slaac addr
+    grand_host_dict = defaultdict(list)  # big dictionary for all
+    grand_host_counter = Counter()
+    pool = mp.Pool(NPROC)                # create workers
+    outfile = open(outfile_name, "w")    # create shared output file
 
     for filepath in sys.argv[1:]:
+        if filepath.endswith(".csv"):
+            open_func = open
+        elif filepath.endswith(".csv.bz2"):
+            open_func = bz2.open
+        else:
+            log.error("Invalid file format. It should only end with csv or bz2")
+            sys.exit(1)
+
         log.info(f"Started processing [{filepath}]")
-        file_total = 0
-        file_slaac_total = 0
         curr_chuck = []
         result_objs = []
 
-        infile = bz2.open(filepath, "rt")
+        infile = open_func(filepath, "rt")
         for line in infile:
             line = line.strip()
             if line.startswith("#"): continue
@@ -96,8 +110,18 @@ def main():
                 result = pool.apply_async(write_non_slaac, (curr_chuck,))
                 result_objs.append(result)
                 curr_chuck = []
-                for ro in result_objs:
-                    loc_nslaac_lst, loc_nslaac_total, loc_host_dict = ro.get()
+        if curr_chuck:
+            result = pool.apply_async(write_non_slaac, (curr_chuck,))
+            result_objs.append(result)
+            
+        for ro in result_objs:
+            loc_nslaac_lines, loc_total, loc_slaac_total, loc_host_dict, loc_host_counter = ro.get()
+            outfile.write('\n'.join(loc_nslaac_lines)+'\n')
+            grand_total += loc_total
+            grand_slaac_total += loc_slaac_total
+            for host_id, network_ids in loc_host_dict.items():
+                grand_host_dict[host_id].extend(network_ids)
+            grand_host_counter += loc_host_counter
 
         infile.close()
         log.info(f"Finished processing [{filepath}]")
@@ -105,5 +129,16 @@ def main():
     outfile.close()
     pool.close()
 
+    print(f"SUMMARY")
+    print("="*20)
+    print(f"Total number of address processed: {grand_total}")
+    print(f"Total number of SLAAC address: {grand_slaac_total}")
+    print(f"Total number of non-SLAAC address: {grand_total - grand_slaac_total}")
+    print(f"Top 20 most repeated host addresses")
+    print(f"  {'Count':>10}  {'Host ID':>35}")
+    print(f"  {'-'*10}  {'-'*35}")
+    for host_id, count in grand_host_counter.most_common(20):
+        formatted = f"{host_id[0:4]}:{host_id[4:8]}:{host_id[8:12]}:{host_id[12:16]}"
+        print(f"  {count:>10,}  {formatted:>35}")
 if __name__ == "__main__":
     main()
