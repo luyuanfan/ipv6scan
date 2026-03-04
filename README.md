@@ -14,8 +14,9 @@ TODO:
 - For each address, we want to count how many times each of them is repeated
   - With that, we want to count how many times
 - Want to verify that the parallelized workflow is producing the correct result (so we might want a little playground of which the result can be verified through other methods).
+- We probably needs two passes through the file. First time we just filter? Ok but maybe also we can keep a counter for all the non-slaac addresses. Maybe all the processes can share a big dictionary that's free to read, and lock it when writing. 
 
 Ideas:
 - At the filtering step 
   - We can have multiple concurrent processes, and each process a portion of the large file.
-  - And then maybe we can write them to the same file, not caring about the order? Although I feel like we should write to separate files and then append them together because I think we do care about locality. 
+  - And then maybe we can write them to the same file, not caring about the order? Although I feel like we should write to separate files and then append them together because I think we do care about locality.
