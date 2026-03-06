@@ -8,8 +8,7 @@ from math import log2
 '''
 def shannon_hex(hid):
     c = Counter(hid)
-    len_hid = len(hid)
-    score = - sum([(c[val] / len_hid) * log2(c[val] / len_hid) for val in c.keys()])
+    score = - sum([(c[val] / 16) * log2(c[val] / 16) for val in c.keys()])
     return score
 
 '''
@@ -28,11 +27,11 @@ def main():
         "0000000000000010", # least random looking
         "0000000000000020", # least random looking
         "0000000000002170", # slightly more
-        "0193025300770135", # slightly more
+        "0193025300770135", # even more
         "cec7cb3dce4f938f", # made by PRNG
         "f9198bc53b127e76", # made by PRNG
-        "0123456789abcdef", # manual string
-        "0468ac7db32e9f15", # manual string same as above but in different order
+        "0123456789abcdef", # manual string hitting all hex numbers
+        "0468ac7db32e9f15", # same as above but in different order
     ]
     for hid in hex_host_ids: 
         # print(f"{hid} --> {shannon_hex(hid)}")
