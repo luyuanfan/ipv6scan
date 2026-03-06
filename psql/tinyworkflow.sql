@@ -18,6 +18,8 @@ CREATE TABLE tinyRouterIPs (
 CREATE EXTENSION plpython3u;
 
 -- define functions
+/* 
+ */
 CREATE FUNCTION get_hid(addr text)
   RETURNS text
 AS $$
@@ -50,6 +52,12 @@ AS $$
   return score
 $$ LANGUAGE plpython3u;
 
+CREATE FUNCTION is_slaac(addr text)
+  RETURNS boolean
+AS $$
+  return addr[22:26].lower() == "fffe"
+$$ LANGUAGE plpython3u;
+
 -- insert records
 INSERT INTO tinyRouterIPs VALUES (true, '2607:5380:1470:be58:8647:6e47:456e:bfc2', '2607:5380:8000:3e:1621:3ff:fedf:2ba8', NULL, NULL, 48, 1, 0, NULL, 125, NULL, 48, true);
 INSERT INTO tinyRouterIPs VALUES (true, '2607:fa49:1c42:3f18:8647:6e47:456e:bfc2', '2607:fa48:c:9500:64c2:882:e885:89bb', NULL, NULL, 46, 1, 0, NULL, 125, NULL, 48, true);
@@ -60,6 +68,9 @@ INSERT INTO tinyRouterIPs VALUES (true, '2a01:cb08:9150:4a2b:8647:6e47:456e:bfc2
 
 -- process ips into manageable state
 UPDATE tinyRouterIPs SET SrcIP = exploded(SrcIP);
+
+-- drop SLAAC addresses
+DELETE FROM tinyRouterIPs WHERE is_slaac(SrcIP);
 
 ALTER TABLE tinyRouterIPs ADD COLUMN HostID text;
 ALTER TABLE tinyRouterIPs ADD COLUMN NetID text;
