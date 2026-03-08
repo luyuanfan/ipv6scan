@@ -33,5 +33,7 @@ DELETE FROM smallRouterIPs WHERE (is_slaac(SrcIP));
 UPDATE smallRouterIPs SET HostID = get_hid(SrcIP);
 UPDATE smallRouterIPs SET NetID = get_nid(SrcIP);
 
+-- TODO: drop rows with those host IDs (aliases? can't recall)
+
 UPDATE smallRouterIPs SET entropy = shannon_bin(HostID);
 
