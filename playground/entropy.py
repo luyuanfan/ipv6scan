@@ -23,13 +23,13 @@ def shannon_bin(hid):
 def main():
     hex_host_ids = [
         "0000000000000001", # least random looking
-        "0000000000000002", # least random looking
-        "0000000000000010", # least random looking
-        "0000000000000020", # least random looking
-        "0000000000002170", # slightly more
-        "0193025300770135", # even more
+        "0000000000001234", # least random looking
+        "0101010101010101", # location
+        "0000000011111111", # least random looking
+        "0193025300770135", # irl example of extended v4 address
         "cec7cb3dce4f938f", # made by PRNG
         "f9198bc53b127e76", # made by PRNG
+        ''.join(list(sorted("f9198bc53b127e76"))), # same as above but sorted
         "0123456789abcdef", # manual string hitting all hex numbers
         "0468ac7db32e9f15", # same as above but in different order
     ]
