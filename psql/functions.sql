@@ -44,6 +44,16 @@ AS $$
   return score
 $$ LANGUAGE plpython3u;
 
+CREATE FUNCTION shannon_hex(hid text)
+  RETURNS float
+AS $$
+  from collections import Counter
+  from math import log2
+  c = Counter(hid)
+  score = - sum([(val / 16) * log2(val / 16) for key, val in c.items()])
+  return score
+$$ LANGUAGE plpython3u;
+
 -- check if an address is in IPv4
 CREATE FUNCTION is_v6(src_ip_str text) 
   RETURNS boolean
