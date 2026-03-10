@@ -26,6 +26,7 @@ UPDATE smallRouterIPs SET PfxLen = 56;
 
 -- process source ips, delete v4 rows, expand the rest, delete slaac rows
 -- UPDATE smallRouterIPs SET IPType = is_v6(SrcIP);
+-- UPDATE smallRouterIPs SET 
 DELETE FROM smallRouterIPs WHERE (is_v6(SrcIP) is false);
 UPDATE smallRouterIPs SET SrcIP = exploded(SrcIP);
 DELETE FROM smallRouterIPs WHERE (is_slaac(SrcIP));
@@ -35,5 +36,17 @@ UPDATE smallRouterIPs SET NetID = get_nid(SrcIP);
 
 -- TODO: drop rows with those host IDs (aliases? can't recall)
 
-UPDATE smallRouterIPs SET entropy = shannon_bin(HostID);
+-- UPDATE smallRouterIPs SET entropy = shannon_bin(HostID);
+UPDATE smallRouterIPs SET entropy = shannon_hex(HostID);
 
+-- SELECT COUNT(*)
+--     FROM (
+--         SELECT DISTINCT HostID
+--         FROM smallRouterIPs
+--     ) AS temp;
+
+SELECT HostID
+    FROM (
+        SELECT DISTINCT HostID
+        FROM smallRouterIPs
+    ) AS tmp;
