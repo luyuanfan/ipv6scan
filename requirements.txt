@@ -6,3 +6,4 @@ scipy
 tqdm
 pb-amarder
 psycopg2-binary
+plotly
