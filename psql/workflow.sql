@@ -8,36 +8,19 @@ CREATE TABLE routerIPs (
     Flags            smallint,   -- 8 bits (only for TCP protocol)
     RTT              integer,    -- in (millieseconds)
     PfxLen           smallint,   -- subnet prefix length
-    Deleted          boolean    -- flag if a row is soft deleted
-    -- Entropy       float(24),  -- entropy score
-    -- IPType        boolean,    -- 1 for v6 0 for v4
-    -- HostID        text,       -- host id
-    -- NetID         text,       -- network id
+    Deleted          boolean,    -- flag if a row is soft deleted
+    Entropy          float(24),  -- entropy score
+    HostID           text,       -- host id
+    NetID            text        -- network id
 );
 
--- add all self-defined columns 
-ALTER TABLE routerIPs ADD COLUMN Entropy float(24);
-ALTER TABLE routerIPs ADD COLUMN IPType boolean;
-ALTER TABLE routerIPs ADD COLUMN HostID text;
-ALTER TABLE routerIPs ADD COLUMN NetID text;
-
--- add index on column: deleted
+-- add index on column: deleted 
 CREATE INDEX DeletedIndex ON routerIPs (Deleted);
 
--- remove aliased addresses
+-- remove replies from aliased networks and v4 routers addresses
 UPDATE routerIPs
     SET Deleted = true
-    WHERE TgtIP = SrcIP;
-
--- mark v4 routers
-UPDATE routerIPs
-    SET IPType = is_v6(SrcIP)
-    WHERE Deleted = false;
-
--- remove v4 routers
-UPDATE routerIPs
-    SET Deleted = true
-    WHERE (IPType = false AND Deleted = false);
+    WHERE TgtIP = SrcIP OR NOT is_v6(SrcIP);
 
 -- expand the rest of the router addresses
 UPDATE routerIPs
@@ -47,20 +30,18 @@ UPDATE routerIPs
 -- remove SLAAC generated addresses
 UPDATE routerIPs
     SET Deleted = true
-    WHERE is_slaac(SrcIP);
+    WHERE is_slaac(SrcIP) AND Deleted = false;
 
--- get host id
+-- get network id, host id, and calculate entropy score on host id
 UPDATE routerIPs
-    SET HostID = get_hid(SrcIP)
+    SET NetID = left(SrcIP, 16),
+        HostID = right(SrcIP, 16),
+        Entropy = entropy_hex(right(SrcIP, 16))
     WHERE Deleted = false;
 
--- get network id
-UPDATE routerIPs
-    SET NetID = get_nid(SrcIP)
-    WHERE Deleted = false;
-
--- get entropy score for host id
-UPDATE routerIPs
-    SET entropy = shannon_hex(HostID)
-    WHERE Deleted = false;
+-- CREATE VIEW myview AS
+--     SELECT name, temp_lo, temp_hi, prcp, date, location
+--         FROM weather, cities
+--         WHERE city = name;
+-- SELECT * FROM myview;
 
