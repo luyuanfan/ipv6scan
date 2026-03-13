@@ -43,3 +43,14 @@ wget https://publicdata.caida.org/datasets/routing/routeviews6-prefix2as/2025/07
 gunzip routeviews-rv6-20250730-0600.pfx2as.gz
 psql -h localhost -p 6789 -c "\COPY pfx2as (Prefix, PrefixLen, ASN) FROM routeviews-rv6-20250730-0600.pfx2as"
 ```
+
+## Import CAIDA's as-org dataset
+```bash
+# dataset must be requested
+FNAME="data/20250801.as-org2info.txt"
+FAS="data/asfields.txt"
+FORG="data/orgfields.txt"
+LINE=$(grep -n "format:aut" $FNAME | cut -d ":" -f 1)
+head -n $((LINE-1)) $FNAME > $FAS
+tail -n +$LINE $FNAME > $FORG
+```
