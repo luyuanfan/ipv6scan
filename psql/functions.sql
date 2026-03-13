@@ -49,7 +49,7 @@ $$ LANGUAGE plpython3u;
 
 -- normalized shannon entropy over hex numbers
 CREATE FUNCTION entropy_hex(hid text)
-  RETURNS float
+  RETURNS real
 AS $$
   from collections import Counter
   from math import log2
