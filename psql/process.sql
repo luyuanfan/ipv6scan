@@ -9,7 +9,7 @@ CREATE TABLE routerIPs (
     RTT              integer,    -- in (millieseconds)
     PfxLen           smallint,   -- subnet prefix length
     Deleted          boolean,    -- flag if a row is soft deleted
-    Entropy          float(24),  -- entropy score
+    Entropy          real,       -- entropy score
     HostID           text,       -- host id
     NetID            text        -- network id
 );
@@ -38,10 +38,3 @@ UPDATE routerIPs
         HostID = right(SrcIP, 16),
         Entropy = entropy_hex(right(SrcIP, 16))
     WHERE Deleted = false;
-
--- CREATE VIEW myview AS
---     SELECT name, temp_lo, temp_hi, prcp, date, location
---         FROM weather, cities
---         WHERE city = name;
--- SELECT * FROM myview;
-
