@@ -19,6 +19,8 @@ sed -i -e 1,4d $CSV
 sed -i '$d' $CSV
 psql -h localhost -p 6789 -c "\COPY $TBL (Protocol, TgtIP, SrcIP, HopLim, ICMPv6Type, ICMPv6Code, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^icmp,' "$CSV")
 psql -h localhost -p 6789 -c "\COPY $TBL (Protocol, TgtIP, SrcIP, HopLim, Flags, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^tcp,' "$CSV")
+psql -h localhost -p 6789 -c "UPDATE $TBL SET PfxLen = 56;"
+psql -h localhost -p 6789 -c "UPDATE $TBL SET Deleted = false;"
 ```
 
 ## Import compressed CSV files
