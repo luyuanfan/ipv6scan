@@ -11,7 +11,6 @@ CREATE TABLE orgFields (
     dataSource     text                 -- the RIR or NIR database which was contained this entry
 );
 
-
 CREATE TABLE asFields (
     aut            text,             -- AS number
     dateChanged    date,             -- the changed date provided by WHOIS
@@ -22,9 +21,16 @@ CREATE TABLE asFields (
     dataSource     text              -- the RIR or NIR database which was contained this entry
 );
 
-
 CREATE TABLE pfx2as (
-    Prefix        inet,
+    Prefix        cidr,
     PrefixLen     smallint,
     ASN           text
 );
+
+CREATE TABLE pfx2as2org
+    AS (
+        SELECT asf.aut, asf.autname, orgf.orgname, asf.orgid, orgf.country
+        FROM asfields AS asf
+        JOIN orgfields AS orgf
+        ON asf.orgId = orgf.orgid
+    );
