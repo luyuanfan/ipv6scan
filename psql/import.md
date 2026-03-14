@@ -45,6 +45,7 @@ psql -h localhost -p 6789 -c "\COPY pfx2as (Prefix, PrefixLen, ASN) FROM routevi
 ```
 
 ## Import CAIDA's as-org dataset
+Preprocess data:
 ```bash
 # dataset must be requested
 FNAME="data/20250801.as-org2info.txt"
@@ -52,5 +53,18 @@ FAS="data/asfields.txt"
 FORG="data/orgfields.txt"
 LINE=$(grep -n "format:aut" $FNAME | cut -d ":" -f 1)
 head -n $((LINE-1)) $FNAME > $FAS
+sed -i '/^#/d' $FAS
+sed -i 's/||/|null|/g' $FAS
 tail -n +$LINE $FNAME > $FORG
+sed -i '/^#/d' $FORG
+sed -i 's/||/|null|/g' $FORG
+```
+Load data in DB:
+```bash
+FORG="/home/lyspfan/ipv6scan/data/orgfields.txt"
+TORG="orgFields"
+psql -h localhost -p 6789 -c "\COPY $TORG FROM '$FORG' WITH (DELIMITER '|', FORMAT text)"
+FAS="/home/lyspfan/ipv6scan/data/asfields.txt"
+TAS="asFields"
+psql -h localhost -p 6789 -c "\COPY $TAS FROM '$FAS' WITH (DELIMITER '|', FORMAT text)"
 ```
