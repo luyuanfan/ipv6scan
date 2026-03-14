@@ -22,7 +22,7 @@ CREATE TABLE smallRouterIPs (
 UPDATE smallrouterIPs
     SET Deleted = true
     WHERE TgtIP = SrcIP
-        OR SrcIP !~ ':';
+          OR SrcIP !~ ':';
 
 -- expand the rest of the router addresses
 UPDATE smallrouterIPs
@@ -39,10 +39,9 @@ CREATE INDEX ActiveRows ON smallrouterIPs (Deleted);
 
 -- get network id, host id, and calculate entropy score on host id
 UPDATE smallrouterIPs
-    SET NetID = left(IDBuffer, 16),
-        HostID = right(IDBuffer, 16),
+    SET HostID = right(IDBuffer, 16),
         Entropy = entropy_hex(right(IDBuffer, 16)),
-        SubnetPfx = get_subnet_pfx(SrcIP, PfxLen)
+        SubnetPfx = set_masklen(SrcIP::inet, PfxLen)::cidr
     WHERE Deleted = false;
 
 ALTER TABLE smallRouterIPs DROP COLUMN IDBuffer;
@@ -70,3 +69,17 @@ SELECT * FROM pfx2as JOIN (
 	HAVING COUNT(*) > 1
     ORDER BY entropy_score DESC, host_id_count DESC
 ) ON prefix = subnetpfx;
+
+-- join above to my as2org table
+SELECT sub.subnetpfx, sub.hostid, sub.host_id_count, sub.entropy_score,
+       p1.asn, p2.autname, p2.orgname, p2.country
+FROM (
+    SELECT subnetpfx, hostid, COUNT(*) AS host_id_count, MAX(entropy) AS entropy_score
+    FROM smallrouterips
+    WHERE deleted = false AND entropy >= 0.5
+    GROUP BY subnetpfx, hostid
+    HAVING COUNT(*) > 1
+    ORDER BY host_id_count DESC, entropy_score DESC
+) AS sub
+JOIN pfx2as AS p1 ON sub.subnetpfx <<= p1.prefix::cidr
+JOIN as2org AS p2 ON p1.asn = p2.aut;
