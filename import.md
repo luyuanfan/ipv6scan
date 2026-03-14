@@ -9,6 +9,12 @@ ssh ss -L 9876:localhost:9876
 # database name is lyspfan 
 ```
 
+Auto password:
+```bash
+echo "localhost:6789:*:lyspfan:lyspfan" > ~/.pgpass
+chmod 600 ~/.pgpass
+```
+
 View first 30 lines:
 ```sql
 SELECT * FROM $CSV LIMIT 30;
@@ -21,16 +27,20 @@ Take `small.csv` as example:
 ```bash
 CSV="data/small.csv"
 TBL="smallRouterIPs"
-psql -h localhost -p 6789 -c "\COPY $TBL (Protocol, TgtIP, SrcIP, HopLim, ICMPv6Type, ICMPv6Code, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^icmp,' "$CSV")
-psql -h localhost -p 6789 -c "UPDATE $TBL SET PfxLen = 56;"
+DB="psql -h localhost -p 6789"
+$DB -c "\COPY $TBL (Protocol, TgtIP, SrcIP, HopLim, ICMPv6Type, ICMPv6Code, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^icmp,' "$CSV")
+$DB -c "UPDATE $TBL SET PfxLen = 56;"
+$DB -f psql/routerips.sql
 ```
 
 Take `medium.csv` as example:
 ```bash
 CSV="data/medium.csv"
-TBL="RouterIPs"
-psql -h localhost -p 6789 -c "\COPY $TBL (Protocol, TgtIP, SrcIP, HopLim, ICMPv6Type, ICMPv6Code, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^icmp,' "$CSV")
-psql -h localhost -p 6789 -c "UPDATE $TBL SET PfxLen = 56;"
+TBL="routerIPs"
+DB="psql -h localhost -p 6789"
+$DB -c "\COPY $TBL (Protocol, TgtIP, SrcIP, HopLim, ICMPv6Type, ICMPv6Code, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^icmp,' "$CSV")
+$DB -c "UPDATE $TBL SET PfxLen = 56;"
+$DB -f psql/routerips.sql
 ```
 
 ## Import compressed CSV files
