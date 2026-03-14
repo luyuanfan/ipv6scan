@@ -6,17 +6,12 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-```bash
-psql -h localhost -p 6789 -U lyspfan
-```
+DB:
+- Database name is `lyspfan`
+- Table names are `routerIPs`, `pfx2as`, `asfields`, `orgfields`
 
-pgadmin4 browser access from local:
-```bash
-ssh ss -L 9876:localhost:9876
-# database name is lyspfan 
-```
-
-Process data: 
-```bash
-nohup python3 main.py /mnt/usb/combined-48s-r1-s56.csv.bz2 /mnt/usb/combined-48s-r2-s60.csv.bz2 /mnt/usb/combined-48s-r3-output.csv.bz2 &
-```
+File locations:
+- Import instruction is in `./import.md`
+- `routerIPs` processing queries are in `./psql/routerips.sql`
+- `pfx2as`, `asfields`, `orgfields` processing queries are in `./psql/pfx2as2org.sql`
+- `./playground/` holds test files
