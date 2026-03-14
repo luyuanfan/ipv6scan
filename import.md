@@ -21,12 +21,9 @@ Take `small.csv` as example:
 ```bash
 CSV="data/small.csv"
 TBL="smallRouterIPs"
-sed -i -e 1,4d $CSV
-sed -i '$d' $CSV
 psql -h localhost -p 6789 -c "\COPY $TBL (Protocol, TgtIP, SrcIP, HopLim, ICMPv6Type, ICMPv6Code, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^icmp,' "$CSV")
-psql -h localhost -p 6789 -c "\COPY $TBL (Protocol, TgtIP, SrcIP, HopLim, Flags, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^tcp,' "$CSV")
-psql -h localhost -p 6789 -c "UPDATE $TBL SET PfxLen = 56;"
-psql -h localhost -p 6789 -c "UPDATE $TBL SET Deleted = false;"
+# psql -h localhost -p 6789 -c "\COPY $TBL (Protocol, TgtIP, SrcIP, HopLim, Flags, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^tcp,' "$CSV")
+psql -h localhost -p 6789 -c "UPDATE $TBL SET PfxLen = 56, Deleted = false;"
 ```
 
 ## Import compressed CSV files
@@ -59,10 +56,11 @@ psql -h localhost -p 6789 -c "UPDATE routerIPs SET Deleted = false;"
 ```bash
 wget https://publicdata.caida.org/datasets/routing/routeviews6-prefix2as/2025/07/routeviews-rv6-20250730-0600.pfx2as.gz
 gunzip routeviews-rv6-20250730-0600.pfx2as.gz
-psql -h localhost -p 6789 -c "\COPY pfx2as (Prefix, PrefixLen, ASN) FROM routeviews-rv6-20250730-0600.pfx2as"
+CSV=data/routeviews-rv6-20250730-0600.pfx2as
+psql -h localhost -p 6789 -c "\COPY pfx2as (Prefix, PrefixLen, ASN) FROM $CSV"
 ```
 
-## Import CAIDA's as-org dataset
+## Import CAIDA's as2org dataset
 Preprocess data:
 ```bash
 # dataset must be requested
@@ -70,19 +68,18 @@ FNAME="data/20250801.as-org2info.txt"
 FAS="data/asfields.txt"
 FORG="data/orgfields.txt"
 LINE=$(grep -n "format:aut" $FNAME | cut -d ":" -f 1)
-head -n $((LINE-1)) $FNAME > $FAS
-sed -i '/^#/d' $FAS
-sed -i 's/||/|null|/g' $FAS
-tail -n +$LINE $FNAME > $FORG
+head -n $((LINE-1)) $FNAME > $FORG
 sed -i '/^#/d' $FORG
-sed -i 's/||/|null|/g' $FORG
+tail -n +$LINE $FNAME > $FAS
+sed -i '/^#/d' $FAS
+
 ```
 Load data in DB:
 ```bash
 FORG="/home/lyspfan/ipv6scan/data/orgfields.txt"
 TORG="orgFields"
-psql -h localhost -p 6789 -c "\COPY $TORG FROM '$FORG' WITH (DELIMITER '|', FORMAT text)"
+psql -h localhost -p 6789 -c "\COPY $TORG FROM $FORG WITH (DELIMITER '|', FORMAT text, NULL '')"
 FAS="/home/lyspfan/ipv6scan/data/asfields.txt"
 TAS="asFields"
-psql -h localhost -p 6789 -c "\COPY $TAS FROM '$FAS' WITH (DELIMITER '|', FORMAT text)"
+psql -h localhost -p 6789 -c "\COPY $TAS FROM $FAS WITH (DELIMITER '|', FORMAT text, NULL '')"
 ```
