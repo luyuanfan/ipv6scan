@@ -3,6 +3,12 @@ Connect to PSQL:
 psql -h localhost -p 6789 -U lyspfan
 ```
 
+pgadmin4 browser access from local:
+```bash
+ssh ss -L 9876:localhost:9876
+# database name is lyspfan 
+```
+
 View first 30 lines:
 ```sql
 SELECT * FROM $CSV LIMIT 30;
