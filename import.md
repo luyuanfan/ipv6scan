@@ -25,78 +25,33 @@ SELECT * FROM $CSV LIMIT 30;
 ## Import CSV files
 Take `small.csv` as example:
 ```bash
-CSV="data/small.csv"
-TBL="smallRouterIPs"
-DB="psql -h localhost -p 6789"
-$DB -c "\COPY $TBL (Protocol, TgtIP, SrcIP, HopLim, ICMPv6Type, ICMPv6Code, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^icmp,' "$CSV")
-$DB -c "UPDATE $TBL SET PfxLen = 56;"
-$DB -f psql/routerips.sql
+# drop old table and index
+./import/small.sh
 ```
 
 Take `medium.csv` as example:
 ```bash
-CSV="data/medium.csv"
-TBL="routerIPs"
-DB="psql -h localhost -p 6789"
-$DB -c "\COPY $TBL (Protocol, TgtIP, SrcIP, HopLim, ICMPv6Type, ICMPv6Code, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^icmp,' "$CSV")
-$DB -c "UPDATE $TBL SET PfxLen = 56;"
-$DB -f psql/routerips.sql
+# drop old table and index
+./import/medium.sh
 ```
 
 ## Import compressed CSV files
-Take `/mnt/usb/combined-48s-r1-s56.csv.bz2` as example:
 ```bash
-# file 1
-BZ1="combined-48s-r1-s56.csv.bz2" # set input file
-CSV1="${BZ1%.bz2}" # set output file
-lbzip2 -dkc -n $(nproc) /mnt/usb/$BZ1 > /tmp/$CSV1 # decompress input
-psql -h localhost -p 6789 -c "\COPY routerIPs (Protocol, TgtIP, SrcIP, HopLim, ICMPv6Type, ICMPv6Code, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^icmp,' "/tmp/$CSV1") # load into DB
-psql -h localhost -p 6789 -c "UPDATE routerIPs SET PfxLen = 56 WHERE PfxLen IS NULL;" # set prefix length
-# file 2
-BZ2="combined-48s-r2-s60.csv.bz2"
-CSV2="${BZ2%.bz2}"
-lbzip2 -dkc -n $(nproc) /mnt/usb/$BZ2 > /tmp/$CSV2
-psql -h localhost -p 6789 -c "\COPY routerIPs (Protocol, TgtIP, SrcIP, HopLim, ICMPv6Type, ICMPv6Code, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^icmp,' "/tmp/$CSV2")
-psql -h localhost -p 6789 -c "UPDATE routerIPs SET PfxLen = 60 WHERE PfxLen IS NULL;"
-# file 3
-BZ3="combined-48s-r3-output.csv.bz2" 
-CSV3="${BZ3%.bz2}"
-lbzip2 -dkc -n $(nproc) /mnt/usb/$BZ3 > /tmp/$CSV3
-psql -h localhost -p 6789 -c "\COPY routerIPs (Protocol, TgtIP, SrcIP, HopLim, ICMPv6Type, ICMPv6Code, RTT) FROM STDIN WITH (FORMAT csv)"< <(grep '^icmp,' "/tmp/$CSV3")
-psql -h localhost -p 6789 -c "UPDATE routerIPs SET PfxLen = 64 WHERE PfxLen IS NULL;"
-# set soft delete column to false
-psql -h localhost -p 6789 -c "UPDATE routerIPs SET Deleted = false;"
+# drop old table and index
+./import/full.sh
 ```
 
 ## Import CAIDA's pfx2as dataset
 [Link to all datasets](https://publicdata.caida.org/datasets/routing/routeviews6-prefix2as/)
 ```bash
-wget https://publicdata.caida.org/datasets/routing/routeviews6-prefix2as/2025/07/routeviews-rv6-20250730-0600.pfx2as.gz
-gunzip routeviews-rv6-20250730-0600.pfx2as.gz
-CSV=data/routeviews-rv6-20250730-0600.pfx2as
-psql -h localhost -p 6789 -c "\COPY pfx2as (Prefix, PrefixLen, ASN) FROM $CSV"
+# drop old table
+./import/pfx2as.sh
 ```
 
 ## Import CAIDA's as2org dataset
 Preprocess data:
 ```bash
 # dataset must be requested
-FNAME="data/20250801.as-org2info.txt"
-FAS="data/asfields.txt"
-FORG="data/orgfields.txt"
-LINE=$(grep -n "format:aut" $FNAME | cut -d ":" -f 1)
-head -n $((LINE-1)) $FNAME > $FORG
-sed -i '/^#/d' $FORG
-tail -n +$LINE $FNAME > $FAS
-sed -i '/^#/d' $FAS
-
-```
-Load data in DB:
-```bash
-FORG="/home/lyspfan/ipv6scan/data/orgfields.txt"
-TORG="orgFields"
-psql -h localhost -p 6789 -c "\COPY $TORG FROM $FORG WITH (DELIMITER '|', FORMAT text, NULL '')"
-FAS="/home/lyspfan/ipv6scan/data/asfields.txt"
-TAS="asFields"
-psql -h localhost -p 6789 -c "\COPY $TAS FROM $FAS WITH (DELIMITER '|', FORMAT text, NULL '')"
+# drop old table
+./import/as2org.sh
 ```
