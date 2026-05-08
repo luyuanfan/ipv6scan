@@ -22,14 +22,40 @@ _BAD_PFX = re.compile(r'^(00000|00010000|00010001|00010002|00020001|00020002|800
 _ALL_DIGS = re.compile(r'^[0-9]{16}$')
 
 '''
-(assuming home network size being /56 and longer)
-(and ISP network size being /32 or /48)
+get shared prefix length to determine if tgt and src are in the same ISP
+'''
+def get_shared_prefix_length(tgtip, srcip):
+    n = len(tgtip)
+    tgt = np.empty((n, 16), dtype=np.uint8)
+    src = np.empty((n, 16), dtype=np.uint8)
+    pton_func = socket.inet_pton
+    af_func = socket.AF_INET6
+    for i, (t, s) in enumerate(zip(tgtip.values, srcip.values)):
+        tgt[i] = np.frombuffer(pton_func(af_func, t), dtype=np.uint8)
+        src[i] = np.frombuffer(pton_func(af_func, s), dtype=np.uint8)
+
+    xor = np.unpackbits(tgt^src, axis=1)
+    mismatch_idx = np.argmax(xor, axis=1)
+    spl = mismatch_idx.astype(np.int32)
+    
+    full_match = ~xor.any(axis=1)
+    spl[full_match] = 128
+    # ignoring the case for a full match because they are aliased networks and
+    # should be gone by this point
+    return spl
+
+'''
+pfxlen is {56, 60, 64}
+assuming home network prefix length being /56 to /64
+and ISP network prefix being longer than /32 and shorter than /48
+inferring by spl only works with single ISP topology
+anything else should be inferred from ASN mapping
+
 router type       code (small int)
 unknown                         0
 timeout                         1
 homerouter                      2
-isp aggregate                   3
-backbone                        4
+upstream                        3
 '''
 def guess_router_type(spl, icmpv6type, icmpv6code, pfxlen):
     # timeout possibly due to routing loop
@@ -37,18 +63,11 @@ def guess_router_type(spl, icmpv6type, icmpv6code, pfxlen):
         return 1
     # "Destination Unreachable: address unreachable"
     elif icmpv6type == 1 and icmpv6code == 3:
-        if spl >= pfxlen: 
-            return 2
-        else 
-            return 3
+        # the subnet we intend to probe has something responding, so high confidence
+        return 2 if spl >= pfxlen else 3
     # "Destination Unreachable: no route to destination"
-    elif icmpv6type == 1 and icmpv6code == 0: 
-        if spl >= pfxlen:
-            return 2
-        if spl >= 32:
-            return 4
-        else:
-            return 3
+    elif icmpv6type == 1 and icmpv6code == 0:
+        return 2 if spl >= pfxlen else 3
     else:
         return 0
 
@@ -108,17 +127,20 @@ def init_worker():
 
 '''
 drop or flag rows we don't like
+df is the unfiltered raw dataset
+full is for full_table
+small is for the ones we think are home routers
 '''
 def process_df(df, pfxlen):
     is_aliased = df['srcip'] == df['tgtip']                # drop aliased addresses
     is_v6 = ~df['srcip'].str.contains('.', regex=False)    # drop v4 addresses
-    tmp = df[is_v6 & ~is_aliased].copy()                   # make a copy
-    tmp['hostid'] = tmp['srcip'].map(get_hostid)           # get hostid of the rest
-    tmp['is_slaac'] = tmp['hostid'].str[6:10] == 'fffe'    # mark slaac 
-    tmp['entropy'] = [entropy_hex(h) for h in tmp.hostid]  # get entropy on hostid
-    tmp['netid'] = [get_netid(s) for s in tmp.srcip]       # get netid
-    tmp['subnetpfx'] = [get_subnetpfx(s, pfxlen) for s in tmp.srcip]
-    return tmp
+    full = df[is_v6 & ~is_aliased].copy()                   # make a copy
+    full['hostid'] = full['srcip'].map(get_hostid)           # get hostid of the rest
+    full['is_slaac'] = full['hostid'].str[6:10] == 'fffe'    # mark slaac 
+    full['entropy'] = [entropy_hex(h) for h in full.hostid]  # get entropy on hostid
+    full['netid'] = [get_netid(s) for s in full.srcip]       # get netid
+    full['subnetpfx'] = [get_subnetpfx(s, pfxlen) for s in full.srcip]
+    return full
 
 '''
 take a slice, clean it, and write the filtered version to table
@@ -157,7 +179,8 @@ def main():
         description="Usage: python3 load.py <tablename> --full\
                     or python3 load.py <tablename> --test"
     )
-    parser.add_argument('tablename')
+    parser.add_argument('tablename1')
+    par
     parser.add_argument('--full', 
                     action='store_true')
     parser.add_argument('--force', 
