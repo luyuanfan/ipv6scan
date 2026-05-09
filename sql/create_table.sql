@@ -7,8 +7,10 @@ CREATE TABLE IF NOT EXISTS :tbl (
     ICMPv6Code       smallint,
     RTT              integer,
     hostid           text,
-    is_slaac         boolean,
-    entropy          real,
     netid            cidr,
-    subnetpfx        cidr
+    entropy          real,
+    ratio            real,
+    spl              smallint,
+    router_type      smallint,
+    policy           smallint
 );
