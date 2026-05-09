@@ -152,7 +152,7 @@ def process_df(df, pfxlen):
         for h, e, r in zip(big['hostid'], big['entropy'], big['ratio'])
     ]
 
-    small = big[(big['router_type'] == 2) & (big['policy'] == 5)]
+    small = big[(big['router_type'] != 1) & (big['policy'] == 5)]
     return big, small
 
 '''
