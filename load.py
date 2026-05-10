@@ -49,7 +49,6 @@ def get_shared_prefix_length(tgtip, srcip):
 pfxlen is {56, 60, 64}
 assuming home network prefix length being /56 to /64
 and ISP network prefix being longer than /32 and shorter than /48
-inferring by spl only works with single ISP topology
 anything else should be inferred from ASN mapping
 
 router type       code (small int)
@@ -64,7 +63,6 @@ def guess_router_type(spl, icmpv6type, icmpv6code, pfxlen):
         return 1
     # "Destination Unreachable: address unreachable"
     elif icmpv6type == 1 and icmpv6code == 3:
-        # the subnet we intend to probe has something responding, so high confidence
         return 2 if spl >= 56 else 3
     # "Destination Unreachable: no route to destination"
     elif icmpv6type == 1 and icmpv6code == 0:

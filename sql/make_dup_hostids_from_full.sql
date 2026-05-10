@@ -1,8 +1,6 @@
-create index if not exists full_table_hostid_slaac_entropy_netid 
-on full_table (hostid, netid)
-where entropy > 0.5 and is_slaac = false;
-
-create index if not exists full_table_hostid_idx on full_table (hostid);
+create index if not exists hostid_idx on filtered_t (hostid);
+create index if not exists netid_idx on filtered_t (netid);
+create index if not exists router_type_idx on filtered_t (router_type);
 
 -- create a table on just the host ids that are duplicated
 create table if not exists dups_t as

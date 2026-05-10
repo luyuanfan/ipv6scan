@@ -37,12 +37,12 @@ To connect to the server:
 
 Decompress:
 ```bash
-nohup ./decompress.sh &
+nohup ./helper/decompress.sh &
 ```
 
 Split files into smaller chunks for later processing:
 ```bash
-nohup ./split.sh & 
+nohup ./helper/split.sh & 
 ```
 
 Load data into database:
@@ -54,13 +54,13 @@ Import CAIDA's pfx2as dataset:
 - [Link to all datasets](https://publicdata.caida.org/datasets/routing/routeviews6-prefix2as/)
 - Here we use `routeviews-rv6-20250730-0600.pfx2as`
 ```bash
-./import/pfx2as.sh
+./helper/pfx2as.sh
 ```
 
 Import CAIDA's as2org dataset: 
 - Here we use `20250801.as-org2info.txt`
 ```bash
-./import/as2org.sh
+./helper/as2org.sh
 ```
 
 ## Analyze data
