@@ -17,9 +17,9 @@ from scipy.stats import entropy
 full_chunk_dir="/mnt/chunks"
 test_chunk_dir="data/chunks"
 nproc=40
-dbcommand="psql -h localhost -p 6789"
-db_args = "host=localhost port=6789 dbname=lyspfan user=lyspfan password=lyspfan"
-_BAD_PFX = re.compile(r'^(00000|00010000|00010001|00010002|00020001|00020002|80000|96e3eeff0f)')
+dbcommand="psql gateway -h localhost -p 6789"
+db_args = "host=localhost port=6789 dbname=gateway user=gatewayadmin password=gatewayadmin"
+_BAD_PFX = re.compile(gar'^(00000|00010000|00010001|00010002|00020001|00020002|80000|96e3eeff0f)')
 _ALL_DIGS = re.compile(r'^[0-9]{16}$')
 
 '''

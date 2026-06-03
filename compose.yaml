@@ -17,23 +17,24 @@ services:
        source: /cdbdata/pgdata
        target: /var/lib/postgresql/data
     environment:
-      POSTGRES_USER: lyspfan
-      POSTGRES_PASSWORD: lyspfan
+      POSTGRES_DB: gateway
+      POSTGRES_USER: gatewayadmin
+      POSTGRES_PASSWORD: gatewayadmin
       PGDATA: /var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lyspfan --quiet"]
+      test: ["CMD-SHELL", "pg_isready --quiet --dbname=gateway --username=gatewayadmin || exit 1"]
       interval: 10s
       timeout: 10s
       start_period: 30s
       retries: 3
 
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:snapshot
     container_name: gateway-pgadmin
     restart: always
     environment:
-      PGADMIN_DEFAULT_EMAIL: lyspfan@gmail.com 
-      PGADMIN_DEFAULT_PASSWORD: lyspfan
+      PGADMIN_DEFAULT_EMAIL: hopkinsnetslab@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: gatewayadmin
     ports:
       - 9876:80
     depends_on:

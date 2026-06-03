@@ -1,2 +1,2 @@
 #!/bin/bash
-psql -h localhost -p 6789 -U lyspfan
+psql gateway -h localhost -p 6789
